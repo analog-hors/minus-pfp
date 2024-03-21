@@ -14,7 +14,7 @@ const RESIZE_OUTPUT: bool = true;
 const APPLY_BORDER: bool = false;
 
 fn noise_fn() -> impl NoiseFn<f64, 4> {
-    let mut noise = Fbm::<OpenSimplex>::default();
+    let mut noise = Fbm::<OpenSimplex>::new(0xd9e);
     noise.octaves = 4;
     noise.persistence = 0.75;
     noise
