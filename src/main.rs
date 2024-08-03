@@ -10,8 +10,9 @@ const UPS: f64 = 0.6;
 const FPS: f64 = 30.0;
 const X_SCALE: f64 = 1.0 / 50.0 * 2.0;
 const Y_SCALE: f64 = 1.0 / 50.0;
-const RESIZE_OUTPUT: bool = true;
 const APPLY_BORDER: bool = false;
+const FILL_BACKGROUND: bool = false;
+const LARGE: bool = true;
 
 fn noise_fn() -> impl NoiseFn<f64, 4> {
     let mut noise = Fbm::<OpenSimplex>::new(0xd9e);
@@ -33,18 +34,21 @@ fn main() {
     let noise = noise_fn();
     let gradient = load_image(include_bytes!("gradient.png")).unwrap();
     let text = load_image(include_bytes!("text.png")).unwrap();
-    let border = load_image(include_bytes!("border.png")).unwrap();
+    let border_large = load_image(include_bytes!("border_large.png")).unwrap();
+    let border_small = load_image(include_bytes!("border_small.png")).unwrap();
+    let border = if LARGE { border_large } else { border_small };
 
     for frame in 0..num_frames() {
         let mut image = DynamicImage::new_rgba8(gradient.width(), gradient.height());
         write_noise(&mut image, &noise, frame);
         apply_gradient(&mut image, &gradient);
         overlay_text(&mut image, &text);
-        if RESIZE_OUTPUT || APPLY_BORDER {
-            resize_to_match_border(&mut image, &border);
-        }
+        resize_to_match_border(&mut image, &border);
         if APPLY_BORDER {
             apply_border(&mut image, &border);
+        }
+        if FILL_BACKGROUND {
+            fill_background(&mut image);
         }
         image.save(&format!("frames/{frame:05}.png")).unwrap();
     }
@@ -115,6 +119,16 @@ fn apply_border(image: &mut DynamicImage, border: &DynamicImage) {
         }
     }
     overlay(image, border, 0, 0);
+}
+
+fn fill_background(image: &mut DynamicImage) {
+    for y in 0..image.height() {
+        for x in 0..image.width() {
+            let mut pixel = Rgba([0, 0, 0, u8::MAX]);
+            pixel.blend(&image.get_pixel(x, y));
+            image.put_pixel(x, y, pixel);
+        }
+    }
 }
 
 fn load_image(buf: &[u8]) -> image::ImageResult<DynamicImage> {
